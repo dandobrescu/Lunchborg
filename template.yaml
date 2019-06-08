@@ -1,0 +1,45 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: >-
+  A function that handles a Slack slash command and echoes the details back to
+  the user.
+Resources:
+  LunchborgWorker:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: lambda_worker.lambda_handler
+      Runtime: python3.6
+      CodeUri: .
+      Description: >-
+        Minion working hard for the Lunchborg, delivers the google sheets responses
+      MemorySize: 128
+      Timeout: 60
+      Role: 'arn:aws:iam::478262784215:role/Lunchborg'
+
+  LunchborgDispatcher:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.6
+      CodeUri: .
+      Description: >-
+        This is the borg side of Lunchborg. The core of it, the one that performs the Slack handshake 
+      MemorySize: 128
+      Timeout: 10
+      Role: 'arn:aws:iam::478262784215:role/Lunchborg'
+      Events:
+        Api1:
+          Type: Api
+          Properties:
+            RestApiId: !Ref LunchborgDispatcherApi
+            Path: /lunchborg/command
+            Method: POST
+      Environment:
+        Variables:
+          LUNCHBORG_BUCKET: lunchborg
+          SLACK_SIGNIN_SECRET: 77c979f5362caeb37669dfde35f8db8e
+  LunchborgDispatcherApi:
+    Type: 'AWS::Serverless::Api'
+    Properties:
+      StageName: dev
+      DefinitionUri: swagger.yaml
